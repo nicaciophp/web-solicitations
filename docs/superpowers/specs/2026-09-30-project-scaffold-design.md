@@ -30,9 +30,27 @@ Backend e frontend são projetos independentes (cada um com seu próprio
   ambiente (host, porta, usuário, senha, nome do banco).
 - `HealthModule` mínimo com rota `GET /health`, usado apenas como sanity
   check de que API, banco e Docker estão funcionando — não é uma feature de
-  negócio.
+  negócio. Vive em `src/health/`, fora do padrão de módulos de entidade
+  abaixo, por não representar uma entidade de negócio.
 - `Dockerfile.dev`: hot-reload via `start:dev` (ts-node/nodemon do Nest CLI),
   código montado como volume.
+- **Convenção de módulos de entidade** (`src/modules/<entidade>/`): cada
+  entidade de negócio (ex. `client`) ganha sua própria pasta com:
+  - `models/<entidade>.entity.ts` — entidade TypeORM (`@Entity()`).
+  - `repository/<entidade>.repository.ts` — classe que estende
+    `Repository<Entidade>` do TypeORM (injetando `DataSource` no
+    construtor), permitindo adicionar métodos customizados quando
+    necessário, além dos já herdados do TypeORM.
+  - `services/<entidade>.service.ts` — regra de negócio, injeta o
+    repository customizado.
+  - `controllers/<entidade>.controller.ts` — rotas HTTP, injeta o service.
+  - `<entidade>.module.ts` — registra `TypeOrmModule.forFeature([Entidade])`
+    e declara `controllers`/`providers` do módulo.
+  - `ClientModule` serve de exemplo/template do padrão, com uma rota
+    mínima (`GET /clients`) provando a cadeia entity → repository →
+    service → controller ponta a ponta.
+- O `AppController`/`AppService` padrão do Nest CLI (rota "Hello World")
+  foi removido — `AppModule` só orquestra imports de módulos.
 - Sem Dockerfile de produção por enquanto (fora de escopo).
 - Pacotes gerenciados via npm.
 
